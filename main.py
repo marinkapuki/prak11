@@ -41,3 +41,21 @@ async def get_current_user(token: Annotated[str, Depends(security)]):
         return payload
     except jwt.PyJWTError:
         raise credentials_exception
+
+@app.post("/login")
+async def login(login_data: LoginRequest):
+    if not authenticate_user(login_data.username, login_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+    
+    token = create_jwt_token({"sub": login_data.username})
+    return {"access_token": token}
+
+@app.get("/protected_resource")
+async def protected_resource(user: dict = Depends(get_current_user)):
+    return {
+        "message": "Access granted",
+        "username": user["sub"]
+    }
